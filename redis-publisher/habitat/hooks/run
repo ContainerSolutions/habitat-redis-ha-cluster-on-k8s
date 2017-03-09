@@ -1,0 +1,8 @@
+while true; do
+  echo "tick"
+  sleep 1
+  echo "tock"
+  sleep 1
+  echo "goes the clock"
+  sleep 1
+done
