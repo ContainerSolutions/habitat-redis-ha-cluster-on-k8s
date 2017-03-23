@@ -84,6 +84,14 @@ spec:
             value: 'protected-mode="no"'
 #          - name: RUST_LOG
 #            value: debug
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
           - name: POD_IP
             valueFrom:
               fieldRef:
