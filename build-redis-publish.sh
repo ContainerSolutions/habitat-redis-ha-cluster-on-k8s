@@ -1,4 +1,7 @@
+ORIGIN=${ORIGIN:-moretea}
+
 set -e
+
 cd redis-publisher
 if true; then
   echo "buillding & upoading"
@@ -10,7 +13,7 @@ if true; then
 
 
   echo "Importing docker image..."
-  docker save moretea/redis-publisher| (eval $(minikube docker-env); docker load)
+  docker save $ORIGIN/redis-publisher| (eval $(minikube docker-env); docker load)
   echo "done"
 fi
 
