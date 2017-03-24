@@ -1,28 +1,23 @@
-set -x
 echo 1
 
 env
 
 add_label_to_self_pod() {
-  echo "ADDING LABEL $1"
-  return 0
+  echo "Setting label $1=$2"
+  k8s_label_op "{ \"op\": \"add\", \"path\": \"/metadata/labels/$1\", \"value\": \"$2\" }"
 }
 
 remove_label_from_self_pod() {
   echo "REMOVING LABEL $1"
-  return 0
+  k8s_label_op "{ \"op\": \"delete\", \"path\": \"/metadata/labels/$1\" }"
 }
 
-#    ADD_FOLLOWER='{ "op": "add", "path": "/metadata/labels/follower", "value": "true" }'
-#    curl -v \
-#      --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
-#      -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" 
-#      --request PATCH \
-#      --data "$ADD_FOLLOWER" \
-#      -H "Content-Type:application/json-patch+json" \
-#      https://kubernetes/api/v1/namespaces/$POD_NAMESPACE/pods/$POD_NAME
-#
-##https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/$POD_NAMESPACE/pods/$POD_NAME
+k8s_label_op() {
+  echo "APPLYING $1"
+  stat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt 
+  echo curl -v -v -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --request PATCH --data "$1" -H "Content-Type:application/json-patch+json" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/$POD_NAMESPACE/pods/$POD_NAME
+  curl -v -v -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" --request PATCH --data "$1" -H "Content-Type:application/json-patch+json" https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/$POD_NAMESPACE/pods/$POD_NAME
+}
 
 
 # Initially, we have no clue wether or not we are a follower or a leader.
@@ -40,16 +35,14 @@ while true; do
     true)
       if [[ "$state"  != "leader" ]]; then
         echo "I have become a leader"
-        remove_label_from_self_pod "follower"
-        add_label_to_self_pod "leader"
+        add_label_to_self_pod "role" "leader"
         state="leader"
       fi
     ;;
     false)
       if [[ "$state" != "follower" ]]; then
         echo "I have become a follower"
-        remove_label_from_self_pod "leader"
-        add_label_to_self_pod "follower"
+        add_label_to_self_pod "role" "follower"
         state="follower"
       fi
     ;;
