@@ -41,6 +41,7 @@ spec:
     spec:
       containers:
       - name: redis
+        imagePullPolicy: Never
         image: core/redis
         args:
           - --topology
@@ -63,6 +64,7 @@ spec:
           - name: "redis-server"
             containerPort: 6379
       - name: redis-publisher
+        imagePullPolicy: Never
         image: moretea/redis-publisher
         args:
           - --group
