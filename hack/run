@@ -1,0 +1,43 @@
+#!/bin/sh
+set -euo pipefail
+
+#pods=($(kubectl get pods | grep redis-ha | awk '{ print $1 }'))
+#POD_NAMESPACE="default"
+#POD_NAME=${pods[$IDX]}
+#let PORT=8001+$IDX
+PORT=9631
+
+# Initially, we have no clue wether or not we are a follower or a leader.
+state="undecided"
+
+# Wait until a member ID has been assigned.
+#hostname=$(hostname)
+hostname=$POD_NAME
+
+while true; do
+  member_id=$(curl -s localhost:$PORT/census | jq -r ".censuses.\"redis.redis-cluster-test\".population | to_entries | map(select(.value.sys.hostname == \"$POD_NAME\"))[0].value.member_id")
+  am_i_a_leader=$(curl -s localhost:$PORT/census | jq -r ".censuses.\"redis.redis-cluster-test\".population.\"$member_id\".leader")
+#  echo "[$(date)] state: $state, member_id: $member_id,  leader_state: '$am_i_a_leader'"
+
+  case "$am_i_a_leader" in
+    true)
+      if [[ "$state"  != "leader" ]]; then
+        echo "I have become a leader"
+        kubectl label pod --overwrite $POD_NAME role=leader
+        state="leader"
+      fi
+    ;;
+    false)
+      if [[ "$state" != "follower" ]]; then
+        echo "I have become a follower"
+        kubectl label pod --overwrite $POD_NAME role=follower
+        state="follower"
+      fi
+    ;;
+    *)
+      echo "Hmm. I'm not a leader or follower, but a '$am_i_a_leader'"
+    ;;
+  esac
+done
+
+#  vim: set filetype=sh :
