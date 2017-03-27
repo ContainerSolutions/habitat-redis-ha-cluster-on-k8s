@@ -55,8 +55,6 @@ spec:
         env:
           - name: HAB_REDIS
             value: 'protected-mode="no"'
-#          - name: RUST_LOG
-#            value: debug
           - name: POD_IP
             valueFrom:
               fieldRef:
