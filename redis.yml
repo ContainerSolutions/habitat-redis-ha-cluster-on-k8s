@@ -4,14 +4,14 @@ metadata:
   name: redis-master
   labels:
     app: redis
-    role: master
+    role: leader
 spec:
   ports:
   - port: 6379
     targetPort: "redis-server"
   selector:
     app: redis
-    role: master
+    role: leader 
 ---
 apiVersion: v1
 kind: Service
@@ -19,21 +19,21 @@ metadata:
   name: redis-slave
   labels:
     app: redis
-    role: slave
+    role: follower
 spec:
   ports:
   - port: 6379
     targetPort: "redis-server"
   selector:
     app: redis
-    role: slave
+    role: follower
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: redis-ha
 spec:
-  replicas: 3
+  replicas: 5
   template:
     metadata:
       labels:
@@ -59,44 +59,37 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: status.podIP
-        ports:
-          - name: "redis-server"
-            containerPort: 6379
-      - name: redis-publisher
-        image: moretea/redis-publisher
-        args:
-          - --group
-          - redis-cluster-publisher
-          - --peer
-          - hab-bootstrap.default.svc.cluster.local
-          - --listen-gossip
-          - $(POD_IP):9639
-          - --listen-http
-          - $(POD_IP):9632
-          - --bind
-          - redis:redis.redis-cluster-test
-        env:
-          - name: HAB_REDIS
-            value: 'protected-mode="no"'
-#          - name: RUST_LOG
-#            value: debug
           - name: POD_NAME
             valueFrom:
               fieldRef:
+                apiVersion: v1
                 fieldPath: metadata.name
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
+                apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: POD_SERVICE_ACCOUNT
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.serviceAccountName
+        ports:
+          - name: "redis-server"
+            containerPort: 6379
+        ports:
+          - name: "redis-server"
+            containerPort: 6379
+      - name: redis-publisher
+        image: moretea/redis-sidekick
+        env:
           - name: POD_IP
             valueFrom:
               fieldRef:
                 apiVersion: v1
                 fieldPath: status.podIP
-        ports:
-          - name: "redis-server"
-            containerPort: 6379
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
